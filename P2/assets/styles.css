@@ -48,9 +48,12 @@ header {
 }
 
 nav {
+    display: flex;
     background: #090909;
     width: 8vw;
     flex-grow: 1;
+    align-items: center;
+    justify-content: center;
 }
 
 main {
