@@ -1,17 +1,44 @@
-import pandas as pd
+# import pandas as pd
 from dash import Dash, html, dcc, Input, Output, callback
 import dash_daq as daq
+import RPi.GPIO as GPIO
+import libs.DHT as DHT
 import libs.emailSender as EmailSender
-import time
 
-fan_on = False
-email_sent = False
-wait_time = 300
+GPIO.setmode(GPIO.BOARD)
+GPIO.setwarnings(False)
+
+dht_pin = 11 
+dht = DHT.DHT(dht_pin)
+
+en = 29
+fan1 = 13
+fan2 = 15
+GPIO.setup(en, GPIO.OUT)
+GPIO.setup(fan1, GPIO.OUT)
+GPIO.setup(fan2, GPIO.OUT)
 
 # Initial temperature values
 temp = 28
 humidity = 0
-fanImg = "assets/img/on.png" if fan_on else "assets/img/off.png"
+fan_on = False
+email_sent = False
+wait_time = 300
+
+GPIO.output(en, GPIO.LOW)
+
+# while True:
+#     GPIO.output(en, GPIO.LOW)
+#     GPIO.output(fan1, GPIO.LOW)
+#     GPIO.output(fan2, GPIO.HIGH)
+
+status = dht.readDHT11()
+if status is dht.DHTLIB_OK:
+    print("Temperature read.")
+    temp = dht.temperature
+    humidity = dht.humidity
+
+
 
 external_stylesheets = [
     {
@@ -54,6 +81,13 @@ def gauge(label, unit, minimum, maximum, val=0):
         )
     )
 
+def toggleFan():
+    while True:
+        GPIO.output(en, GPIO.HIGH)
+        GPIO.output(fan1, GPIO.LOW)
+        GPIO.output(fan2, GPIO.HIGH)
+
+
 
 # Define layout
 app.layout = html.Div(
@@ -77,7 +111,7 @@ app.layout = html.Div(
                                     className="block",
                                     children=[
                                         html.H3(f"Fan Status: {fan_on}"),
-                                        html.Img(className="block", src=fanImg)
+                                        html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
                                     ]
                                 )
                             ]
@@ -92,31 +126,27 @@ app.layout = html.Div(
                 )
             ]
         ),
-        html.Script(id='alert', children="")
     ]
 )
 
-
 # Check for email response every 5 seconds
 @app.callback(
-    [Output('main-content', 'children'),
-     Output('alert', 'children')],
+    Output('main-content', 'children'),
     [Input('interval-component', 'n_intervals')]
 )
 def update(n):
-    global fan_on, email_sent, wait_time
+    global fan_on, email_sent, wait_time, temp, humidity
 
-    alert = ""
     # Check for email response
-    if not email_sent and n % (wait_time / 5) == 0 and temp > 24:
+    if not email_sent and n % (wait_time / 5) == 0 and temp >= 24:
         fan_on = EmailSender.main(temp)
         email_sent = True
-        alert = "alert('Check your email to turn on fan!');"
 
-
-
-    # Update fanImg based on fan_on
-    fanImg = "assets/img/on.png" if fan_on else "assets/img/off.png"
+    # Enables fan based on fan status
+    print(f"Setting fan status: {fan_on}")
+    GPIO.output(en, GPIO.HIGH if fan_on else GPIO.LOW)
+    GPIO.output(fan1, GPIO.LOW if fan_on else GPIO.HIGH)
+    GPIO.output(fan2, GPIO.HIGH if fan_on else GPIO.LOW)
 
     # Update layout
     return [
@@ -124,18 +154,17 @@ def update(n):
         gauge("Humidity", "%", 0, 100, humidity),
         html.Div(
             className="col-right",
-            children=
-            html.Div(
-                className="block col",
-                children=[
-                    html.H3(f"Fan Status: {'on' if fan_on else 'off'}"),
-                    html.Img(className="block", src=fanImg)
-                ]
-            )
+            children=[
+                html.Div(
+                    className="block",
+                    children=[
+                        html.H3(f"Fan Status: {'on' if fan_on else 'off'}"),
+                        html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
+                    ]
+                )
+            ]
         ),
-        alert
     ]
-
 
 # Run the app
 if __name__ == '__main__':
