@@ -1,3 +1,4 @@
+import datetime
 import imaplib
 import email
 import smtplib
@@ -11,12 +12,14 @@ message_id = str(uuid.uuid4())
 sender_email = "felixbrandonlee@gmail.com"
 sender_password = "vrsg rtma ozeg xpoe"
 recipient_email = "vapidx4@hotmail.com"
-subject = f"Fan Control Request #{message_id}"
+subject = f"Light Control #{message_id}"
 
 
 def send_email(light_intensity):
-    body = """
-            The Light is ON at hh: mm time.
+    print("Creating email...")
+    current_time = datetime.datetime.now().strftime("%H:%M:%S")
+    body = f"""
+            The Light is ON at {current_time} time.
             """
 
     em = EmailMessage()
@@ -25,12 +28,13 @@ def send_email(light_intensity):
     em["Subject"] = subject
     em.set_content(body)
 
-
+    
     try:
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
             smtp.login(sender_email, sender_password)
             smtp.sendmail(sender_email, recipient_email, em.as_string())
+        return
     except Exception as e:
         print(f"Error sending email: {e}")
 

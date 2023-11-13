@@ -10,6 +10,11 @@ import sqlite3
 GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
 
+led = 37
+
+GPIO.setup(led, GPIO.OUT)
+GPIO.output(led, GPIO.LOW)
+
 mqtt_broker = "10.0.0.18"
 mqtt_port = 1883
 mqtt_topic = "Home/LIGHT"
@@ -23,6 +28,10 @@ wait_time = 300
 
 # fetch email threshold
 connection = sqlite3.connect(database='db.sql')
+# update_query = "UPDATE settings SET light_threshold = 400 WHERE user_id = {u_id}"
+# connection.execute(update_query)
+# connection.commit()
+
 query = connection.execute(f"SELECT light_threshold from settings where user_id = {u_id}")
 light_threshold = query.fetchone()[0]
 
@@ -100,7 +109,7 @@ app.layout = html.Div(
                     className="row",
                     id="main-content",
                     children=[
-                        gauge("Light Intensity", "Units", 0, 1024, light_intensity),
+                        gauge("Light Intensity", "Lumens", 0, 1024, light_intensity),
                         html.Div(
                             className="col-right",
                             children=[
@@ -133,21 +142,33 @@ app.layout = html.Div(
 )
 def update(n):
     global light_on, email_sent, wait_time, light_intensity, light_threshold
+    # print(light_threshold)
 
     # Check for email response
-    if not email_sent and n % (wait_time / 5) == 0 and light_intensity <= light_threshold:
-        light_on = EmailSender.main(light_intensity)
+    if not email_sent and light_intensity >= light_threshold:
+        print(f"Treshold of {light_threshold} reached... Sending email")
+        light_on = EmailSender.send_email(light_intensity)
+        GPIO.output(led, GPIO.HIGH)   # turn light on
+
         email_sent = True
 
-    if light_on:
-        # turn light on
-        pass
+    # Control the light based on the threshold
+    if light_intensity <= light_threshold:
+        GPIO.output(led, GPIO.HIGH)   # turn light on
+
+        light_on = True
+        email_sent = True
+
     else:
-        # turn light off
-        pass
+        GPIO.output(led, GPIO.LOW)   # turn light off
+        light_on = False
+        email_sent = False
+
 
     # Update layout
-    return [
+    
+    # Define the content based on whether the email has been sent
+    content = [
         gauge("Light Intensity", "Units", 0, 1024, light_intensity),
         html.Div(
             className="col-right",
@@ -156,13 +177,48 @@ def update(n):
                     className="block",
                     children=[
                         html.H3(f"Light Status: {'on' if light_on else 'off'}"),
-                        html.Img(className="block", src=f"assets/img/{'on' if light_on else 'off'}.png")
+
+                        html.Img(className="block", src=f"assets/img/{'on' if light_on else 'off'}.png", style={"height": "100px", "width": "100px"})
                     ]
                 )
             ]
         ),
     ]
 
-# Run the app
-if __name__ == '__main__':
-    app.run_server(debug=True)
+
+    # Conditionally add email notification div
+    if email_sent:
+        content = [
+        gauge("Light Intensity", "Units", 0, 1024, light_intensity),
+        html.Div(
+            className="col-right",
+            children=[
+                
+                html.Div(
+                    className="block",
+                    children=[
+                        html.P("A notification has been sent to your email")
+                    ]
+                ),
+                html.Div(
+                    className="block",
+                    children=[
+                        html.H3(f"Light Status: {'on' if light_on else 'off'}"),
+
+                        html.Img(className="block", src=f"assets/img/{'on' if light_on else 'off'}.png", style={"height": "100px", "width": "100px"})
+                    ]
+                )
+            ]
+        ),
+    ]
+    # Update layout
+    return content
+
+try:
+    # Run the app
+    if __name__ == '__main__':
+        app.run_server(debug=True)
+
+finally:
+    # Cleanup GPIO
+    GPIO.cleanup()
