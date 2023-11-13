@@ -4,40 +4,39 @@ import dash_daq as daq
 import RPi.GPIO as GPIO
 import libs.DHT as DHT
 import libs.emailSender as EmailSender
+import paho.mqtt.client as mqtt
+
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
 
-dht_pin = 11 
-dht = DHT.DHT(dht_pin)
-
-en = 29
-fan1 = 13
-fan2 = 15
-GPIO.setup(en, GPIO.OUT)
-GPIO.setup(fan1, GPIO.OUT)
-GPIO.setup(fan2, GPIO.OUT)
+mqtt_broker = "10.0.0.18"
+mqtt_port = 1883
+mqtt_topic = "Home/LIGHT"
 
 # Initial temperature values
-temp = 28
-humidity = 0
+light_intensity = 28
 fan_on = False
 email_sent = False
 wait_time = 300
 
-GPIO.output(en, GPIO.LOW)
+# MQTT callback function
+def on_message(client, userdata, msg):
+    global light_intensity
+    try:
+        light_intensity = int(msg.payload.decode("utf-8"))
+        print(f"Received message on topic {msg.topic}: {light_intensity}")
+    except ValueError as e:
+        print(f"Error parsing MQTT message: {e}")
 
-# while True:
-#     GPIO.output(en, GPIO.LOW)
-#     GPIO.output(fan1, GPIO.LOW)
-#     GPIO.output(fan2, GPIO.HIGH)
+# MQTT client setup
+mqtt_client = mqtt.Client()
+mqtt_client.on_message = on_message
+mqtt_client.connect(mqtt_broker, mqtt_port, 60)
+mqtt_client.subscribe(mqtt_topic)
 
-status = dht.readDHT11()
-if status is dht.DHTLIB_OK:
-    print("Temperature read.")
-    temp = dht.temperature
-    humidity = dht.humidity
-
+# Start the MQTT client loop in a separate thread
+mqtt_client.loop_start()
 
 
 external_stylesheets = [
@@ -81,13 +80,6 @@ def gauge(label, unit, minimum, maximum, val=0):
         )
     )
 
-def toggleFan():
-    while True:
-        GPIO.output(en, GPIO.HIGH)
-        GPIO.output(fan1, GPIO.LOW)
-        GPIO.output(fan2, GPIO.HIGH)
-
-
 
 # Define layout
 app.layout = html.Div(
@@ -97,20 +89,19 @@ app.layout = html.Div(
         html.Main(
             className="col",
             children=[
-                header("IoT Temperature Dashboard"),
+                header("IoT Light Dashboard"),
                 html.Div(
                     className="row",
                     id="main-content",
                     children=[
-                        gauge("Temperature", "Celsius", -50, 50, temp),
-                        gauge("Humidity", "%", 0, 100, humidity),
+                        gauge("Light Intensity", "Units", 0, 1024, light_intensity),
                         html.Div(
                             className="col-right",
                             children=[
                                 html.Div(
                                     className="block",
                                     children=[
-                                        html.H3(f"Fan Status: {fan_on}"),
+                                        html.H3(f"Light Status: {fan_on}"),
                                         html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
                                     ]
                                 )
@@ -135,30 +126,24 @@ app.layout = html.Div(
     [Input('interval-component', 'n_intervals')]
 )
 def update(n):
-    global fan_on, email_sent, wait_time, temp, humidity
+    global fan_on, email_sent, wait_time, light_intensity
 
     # Check for email response
-    if not email_sent and n % (wait_time / 5) == 0 and temp >= 24:
-        fan_on = EmailSender.main(temp)
+    if not email_sent and n % (wait_time / 5) == 0 and light_intensity <= 400:
+        fan_on = EmailSender.main(light_intensity)
         email_sent = True
 
-    # Enables fan based on fan status
-    print(f"Setting fan status: {fan_on}")
-    GPIO.output(en, GPIO.HIGH if fan_on else GPIO.LOW)
-    GPIO.output(fan1, GPIO.LOW if fan_on else GPIO.HIGH)
-    GPIO.output(fan2, GPIO.HIGH if fan_on else GPIO.LOW)
 
     # Update layout
     return [
-        gauge("Temperature", "Celsius", -50, 50, temp),
-        gauge("Humidity", "%", 0, 100, humidity),
+        gauge("Light Intensity", "Units", 0, 1024, light_intensity),
         html.Div(
             className="col-right",
             children=[
                 html.Div(
                     className="block",
                     children=[
-                        html.H3(f"Fan Status: {'on' if fan_on else 'off'}"),
+                        html.H3(f"Light Status: {'on' if fan_on else 'off'}"),
                         html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
                     ]
                 )
