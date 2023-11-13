@@ -15,6 +15,7 @@ mqtt_port = 1883
 mqtt_topic = "Home/LIGHT"
 
 # Initial temperature values
+u_id = 1
 light_intensity = 28
 fan_on = False
 email_sent = False
