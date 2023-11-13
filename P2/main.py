@@ -148,8 +148,8 @@ def update(n):
     GPIO.output(fan1, GPIO.LOW if fan_on else GPIO.HIGH)
     GPIO.output(fan2, GPIO.HIGH if fan_on else GPIO.LOW)
 
-    # Update layout
-    return [
+
+    content = [
         gauge("Temperature", "Celsius", -50, 50, temp),
         gauge("Humidity", "%", 0, 100, humidity),
         html.Div(
@@ -165,6 +165,33 @@ def update(n):
             ]
         ),
     ]
+
+    if email_sent:
+        content = [
+        gauge("Temperature", "Celsius", -50, 50, temp),
+        gauge("Humidity", "%", 0, 100, humidity),
+        html.Div(
+            className="col-right",
+            children=[
+                html.Div(
+                        className="block",
+                        children=[
+                            html.P("A notification has been sent to your email")
+                        ]
+                    ),
+                html.Div(
+                    className="block",
+                    children=[
+                        html.H3(f"Fan Status: {'on' if fan_on else 'off'}"),
+                        html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
+                    ]
+                )
+            ]
+        ),
+    ]
+
+    # Update layout
+    return content
 
 # Run the app
 if __name__ == '__main__':
