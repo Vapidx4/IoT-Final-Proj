@@ -14,10 +14,9 @@ recipient_email = "vapidx4@hotmail.com"
 subject = f"Fan Control Request #{message_id}"
 
 
-def send_email(temp):
+def send_email(light_intensity):
     body = """
-            The current temperature is """ + str(temp) + """. Would you like to turn on the fan?
-            Please respond with \"YES\" to turn it on.
+            The Light is ON at hh: mm time.
             """
 
     em = EmailMessage()
@@ -77,7 +76,7 @@ def wait_for_response(timeout=300):
     return None
 
 
-def main(temp):
+"""def main(temp):
     print("Connecting to SMTP server...")
     send_email(temp)
     print("Email sent.")
@@ -101,6 +100,4 @@ def main(temp):
     else:
         print("No response received within 5 minutes. Ending the program.")
 
-    return False
-
-
+    return False"""
