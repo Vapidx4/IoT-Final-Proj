@@ -16,8 +16,8 @@ mqtt_topic = "Home/LIGHT"
 
 # Initial temperature values
 u_id = 1
-light_intensity = 28
-fan_on = False
+light_intensity = 1024
+light_on = False
 email_sent = False
 wait_time = 300
 
@@ -107,8 +107,8 @@ app.layout = html.Div(
                                 html.Div(
                                     className="block",
                                     children=[
-                                        html.H3(f"Light Status: {fan_on}"),
-                                        html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
+                                        html.H3(f"Light Status: {light_on}"),
+                                        html.Img(className="block", src=f"assets/img/{'on' if light_on else 'off'}.png")
                                     ]
                                 )
                             ]
@@ -132,13 +132,19 @@ app.layout = html.Div(
     [Input('interval-component', 'n_intervals')]
 )
 def update(n):
-    global fan_on, email_sent, wait_time, light_intensity, light_threshold
+    global light_on, email_sent, wait_time, light_intensity, light_threshold
 
     # Check for email response
-    if not email_sent and n % (wait_time / 5) == 0 and light_intensity <= light_threshold
-        fan_on = EmailSender.main(light_intensity)
+    if not email_sent and n % (wait_time / 5) == 0 and light_intensity <= light_threshold:
+        light_on = EmailSender.main(light_intensity)
         email_sent = True
 
+    if light_on:
+        # turn light on
+        pass
+    else:
+        # turn light off
+        pass
 
     # Update layout
     return [
@@ -149,8 +155,8 @@ def update(n):
                 html.Div(
                     className="block",
                     children=[
-                        html.H3(f"Light Status: {'on' if fan_on else 'off'}"),
-                        html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
+                        html.H3(f"Light Status: {'on' if light_on else 'off'}"),
+                        html.Img(className="block", src=f"assets/img/{'on' if light_on else 'off'}.png")
                     ]
                 )
             ]

@@ -41,8 +41,8 @@ def wait_for_response(timeout=300):
     end_time = time.time() + timeout
 
     while time.time() < end_time and not response_received:
+        mail = imaplib.IMAP4_SSL("imap.gmail.com")
         try:
-            mail = imaplib.IMAP4_SSL("imap.gmail.com")
             mail.login(sender_email, sender_password)
             mail.select("inbox")
 
@@ -93,10 +93,10 @@ def main(temp):
 
         # Check if the response is "YES"
         if response_body == "YES":
-            print("Fan will be turned on.")
+            print("Light will be turned on.")
             return True
         else:
-            print("Fan will not be turned on.")
+            print("Light will be turned off.")
 
     else:
         print("No response received within 5 minutes. Ending the program.")

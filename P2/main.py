@@ -21,7 +21,7 @@ GPIO.setup(fan2, GPIO.OUT)
 # Initial temperature values
 temp = 28
 humidity = 0
-fan_on = False
+light_on = False
 email_sent = False
 wait_time = 300
 
@@ -110,8 +110,8 @@ app.layout = html.Div(
                                 html.Div(
                                     className="block",
                                     children=[
-                                        html.H3(f"Fan Status: {fan_on}"),
-                                        html.Img(className="block", src=f"assets/img/{'on' if fan_on else 'off'}.png")
+                                        html.H3(f"Fan Status: {light_on}"),
+                                        html.Img(className="block", src=f"assets/img/{'on' if light_on else 'off'}.png")
                                     ]
                                 )
                             ]
@@ -135,7 +135,7 @@ app.layout = html.Div(
     [Input('interval-component', 'n_intervals')]
 )
 def update(n):
-    global fan_on, email_sent, wait_time, temp, humidity
+    global light_on, email_sent, wait_time, temp, humidity
 
     # Check for email response
     if not email_sent and n % (wait_time / 5) == 0 and temp >= 24:
