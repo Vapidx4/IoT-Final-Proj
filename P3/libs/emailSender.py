@@ -35,45 +35,45 @@ def send_email(light_intensity):
         print(f"Error sending email: {e}")
 
 
-def wait_for_response(timeout=300):
-    response_received = False
-    end_time = time.time() + timeout
+# def wait_for_response(timeout=300):
+#     response_received = False
+#     end_time = time.time() + timeout
 
-    while time.time() < end_time and not response_received:
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        try:
-            mail.login(sender_email, sender_password)
-            mail.select("inbox")
+#     while time.time() < end_time and not response_received:
+#         mail = imaplib.IMAP4_SSL("imap.gmail.com")
+#         try:
+#             mail.login(sender_email, sender_password)
+#             mail.select("inbox")
 
-            status, messages = mail.search(None, f'(HEADER Subject "Re: {subject}" TO "{sender_email}")')
-            messages = messages[0].split()
+#             status, messages = mail.search(None, f'(HEADER Subject "Re: {subject}" TO "{sender_email}")')
+#             messages = messages[0].split()
 
-            if messages:
-                latest_message_id = messages[-1]
-                _, msg_data = mail.fetch(latest_message_id, "(RFC822)")
-                raw_email = msg_data[0][1]
-                message = email.message_from_bytes(raw_email)
+#             if messages:
+#                 latest_message_id = messages[-1]
+#                 _, msg_data = mail.fetch(latest_message_id, "(RFC822)")
+#                 raw_email = msg_data[0][1]
+#                 message = email.message_from_bytes(raw_email)
 
-                # Extracting the response from the email
-                if message.is_multipart():
-                    for part in message.walk():
-                        if part.get_content_type() == "text/plain":
-                            response_text = part.get_payload(decode=True).decode("utf-8", errors="replace")
-                            # print("Response:", response_text)
-                            return response_text.strip()
-                else:
-                    response_text = message.get_payload(decode=True).decode("utf-8", errors="replace")
-                    print("Response:", response_text)
-                    return response_text.strip()
+#                 # Extracting the response from the email
+#                 if message.is_multipart():
+#                     for part in message.walk():
+#                         if part.get_content_type() == "text/plain":
+#                             response_text = part.get_payload(decode=True).decode("utf-8", errors="replace")
+#                             # print("Response:", response_text)
+#                             return response_text.strip()
+#                 else:
+#                     response_text = message.get_payload(decode=True).decode("utf-8", errors="replace")
+#                     print("Response:", response_text)
+#                     return response_text.strip()
 
-        except Exception as e:
-            print(f"Error checking for response: {e}")
-        finally:
-            mail.logout()
+#         except Exception as e:
+#             print(f"Error checking for response: {e}")
+#         finally:
+#             mail.logout()
 
-        time.sleep(10)
+#         time.sleep(10)
 
-    return None
+#     return None
 
 
 """def main(temp):
