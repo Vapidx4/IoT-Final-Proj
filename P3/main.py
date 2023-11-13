@@ -5,7 +5,7 @@ import RPi.GPIO as GPIO
 import libs.DHT as DHT
 import libs.emailSender as EmailSender
 import paho.mqtt.client as mqtt
-
+import sqlite3
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
@@ -20,6 +20,11 @@ light_intensity = 28
 fan_on = False
 email_sent = False
 wait_time = 300
+
+# fetch email threshold
+connection = sqlite3.connect(database='db.sql')
+query = connection.execute(f"SELECT light_threshold from settings where user_id = {u_id}")
+light_threshold = query.fetchone()[0]
 
 # MQTT callback function
 def on_message(client, userdata, msg):
@@ -127,10 +132,10 @@ app.layout = html.Div(
     [Input('interval-component', 'n_intervals')]
 )
 def update(n):
-    global fan_on, email_sent, wait_time, light_intensity
+    global fan_on, email_sent, wait_time, light_intensity, light_threshold
 
     # Check for email response
-    if not email_sent and n % (wait_time / 5) == 0 and light_intensity <= 400:
+    if not email_sent and n % (wait_time / 5) == 0 and light_intensity <= light_threshold
         fan_on = EmailSender.main(light_intensity)
         email_sent = True
 
