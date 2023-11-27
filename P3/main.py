@@ -11,11 +11,12 @@ GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
 
 led = 37
+dht = 40
 
 GPIO.setup(led, GPIO.OUT)
 GPIO.output(led, GPIO.LOW)
 
-mqtt_broker = "10.0.0.18"
+mqtt_broker = "192.168.7.48"
 mqtt_port = 1883
 mqtt_topic = "Home/LIGHT"
 
@@ -145,9 +146,9 @@ def update(n):
     # print(light_threshold)
 
     # Check for email response
-    if not email_sent and light_intensity >= light_threshold:
+    if not email_sent and light_intensity <= light_threshold:
         print(f"Treshold of {light_threshold} reached... Sending email")
-        light_on = EmailSender.send_email(light_intensity)
+        # light_on = EmailSender.send_email(light_intensity)
         GPIO.output(led, GPIO.HIGH)   # turn light on
 
         email_sent = True
