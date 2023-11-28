@@ -183,10 +183,14 @@ def update(n):
     # Check for email response
     if not email_sent and light_intensity >= light_threshold:
         print(f"Treshold of {light_threshold} reached... Sending email")
-        light_on = EmailSender.send_email(light_intensity)
+        light_on = EmailSender.send_email_light(light_intensity)
         GPIO.output(led, GPIO.HIGH)   # turn light on
 
         email_sent = True
+        
+    if not email_sent and n % (wait_time / 5) == 0 and temp >= 22:
+        fan_on = EmailSender.send_email_fan(temp)
+        email_sent = True    
 
     # Enables fan based on fan status
     print(f"Setting fan status: {fan_on}")

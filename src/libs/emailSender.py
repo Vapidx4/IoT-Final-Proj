@@ -12,10 +12,11 @@ message_id = str(uuid.uuid4())
 sender_email = "felixbrandonlee@gmail.com"
 sender_password = "vrsg rtma ozeg xpoe"
 recipient_email = "vapidx4@hotmail.com"
-subject = f"Light Control #{message_id}"
+subject_light = f"Light Control #{message_id}"
+subject_fan = f"Fan Control Request #{message_id}"
 
 
-def send_email(light_intensity):
+def send_email_light(light_intensity):
     print("Creating email...")
     current_time = datetime.datetime.now().strftime("%H:%M:%S")
     body = f"""
@@ -25,7 +26,7 @@ def send_email(light_intensity):
     em = EmailMessage()
     em["From"] = sender_email
     em["To"] = recipient_email
-    em["Subject"] = subject
+    em["Subject"] = subject_light
     em.set_content(body)
 
     
@@ -38,6 +39,26 @@ def send_email(light_intensity):
     except Exception as e:
         print(f"Error sending email: {e}")
 
+def send_email_fan(temp):
+    body = """
+            The current temperature is """ + str(temp) + """. Would you like to turn on the fan?
+            Please respond with \"YES\" to turn it on.
+            """
+
+    em = EmailMessage()
+    em["From"] = sender_email
+    em["To"] = recipient_email
+    em["Subject"] = subject_fan
+    em.set_content(body)
+
+
+    try:
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
+            smtp.login(sender_email, sender_password)
+            smtp.sendmail(sender_email, recipient_email, em.as_string())
+    except Exception as e:
+        print(f"Error sending email: {e}")
 
 # def wait_for_response(timeout=300):
 #     response_received = False

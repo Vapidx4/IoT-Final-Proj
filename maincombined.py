@@ -138,6 +138,11 @@ app.layout = html.Div(
     ]
 )        
 
+# Check for email response every 5 seconds
+@app.callback(
+    Output('main-content', 'children'),
+    [Input('interval-component', 'n_intervals')]
+)
 def update(n):
     global light_on, email_sent, wait_time, temp, humidity
 
