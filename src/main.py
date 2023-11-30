@@ -5,6 +5,7 @@ import libs.DHT as DHT
 import libs.emailSender as EmailSender
 import paho.mqtt.client as mqtt
 import sqlite3
+import simplepyble
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
@@ -31,6 +32,7 @@ humidity = 0
 light_on = False
 fan_on = False
 email_sent = False
+bt_devices = 0
 wait_time = 300
 GPIO.output(en, GPIO.LOW)
 
@@ -151,7 +153,13 @@ app.layout = html.Div(
 
                                         html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "100px", "width": "100px"})
                                     ]
-                                )
+                                ),
+                                html.Div(
+                                    className="block",
+                                    children=[
+                                        html.H3(f"Nearby Bluetooth Devices: {fan_on}"),
+                                    ]
+                                ),
                                 
                             ]
                         )
@@ -175,7 +183,7 @@ app.layout = html.Div(
     [Input('interval-component', 'n_intervals')]
 )
 def update(n):
-    global light_on, fan_on, email_sent, wait_time, temp, humidity, light_intensity, light_threshold
+    global light_on, fan_on, email_sent, bt_devices, wait_time, temp, humidity, light_intensity, light_threshold
 
     print('Updating...')
     print(light_intensity)
@@ -209,6 +217,13 @@ def update(n):
         GPIO.output(led, GPIO.LOW)   # turn light off
         light_on = False
         email_sent = False
+
+    adapters = simplepyble.Adapter.get_adapters()
+    adapter = adapters[0]
+    adapter.scan_for(5000)
+
+    devices = adapter.scan_get_results()
+    bt_devices = len(devices)
 
     content = [
         gauge("Temperature", "Celsius", -50, 50, temp),
