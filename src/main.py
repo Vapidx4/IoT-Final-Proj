@@ -171,6 +171,14 @@ nav_bar = html.Nav(
     ]
 )
 
+light_button =  html.Div([
+    daq.ToggleSwitch(
+        id='light-button',
+        value=light_on,
+        vertical=True
+
+    ),
+])
 
 # Defines Header
 def header(title):
@@ -246,6 +254,7 @@ app.layout = html.Div(
                                     className="block",
                                     children=[
                                         html.H3(f"Light Status: {'on' if light_on else 'off'}"),
+                                        light_button,
 
                                         html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "100px", "width": "100px"})
                                     ]
@@ -278,9 +287,9 @@ app.layout = html.Div(
 # Check for email response every 5 seconds
 @app.callback(
     Output('main-content', 'children'),
-    [Input('interval-component', 'n_intervals')]
+    [Input('interval-component', 'n_intervals'), Input('light-button', 'value')]
 )
-def update(n):
+def update(n, light_status):
     global bt_devices, light_on, fan_on, email_sent, light_email_sent, user_email_sent, fan_email_sent, wait_time, temp, humidity, light_intensity, u_id, light_threshold, humidity_threshold, temp_threshold, rssi_threshold
 
     # print('Updating...')
@@ -298,7 +307,7 @@ def update(n):
     # print(u_id)
     # print(user_name)
     
-    
+    light_on = light_status
 
 
     # Check for email response
@@ -367,6 +376,7 @@ def update(n):
                     className="block",
                     children=[
                         html.H3(f"Light Status: {'on' if light_on else 'off'}"),
+                        light_button,
 
                         html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "100px", "width": "100px"})
                     ]
@@ -425,6 +435,7 @@ def update(n):
                     className="block",
                     children=[
                         html.H3(f"Light Status: {'on' if light_on else 'off'}"),
+                        light_button,
 
                         html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "100px", "width": "100px"})
                     ]
