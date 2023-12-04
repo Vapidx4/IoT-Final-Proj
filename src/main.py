@@ -35,18 +35,23 @@ temp = 28
 humidity = 0
 light_on = False
 fan_on = False
+bt_devices = 0
 light_email_sent = False
 fan_email_sent = False
 user_email_sent = False
 email_sent = False
-wait_time = 300
+wait_time = 60
 GPIO.output(en, GPIO.LOW)
 
-u_id = '73fc5ea0'
+u_id = 'cc8523e1'
 light_intensity = 1024
 light_threshold = 400
 
 rssi_threshold = -80
+new_u_id = 0
+old_u_id = 0
+
+
 #light_on = False
 #email_sent = False
 #wait_time = 300
@@ -83,7 +88,7 @@ connection.commit()
 insert_data_query = '''
     INSERT OR IGNORE INTO settings (user_id, user_name, temp_threshold, humidity_threshold, light_threshold, rssi_threshold)
     VALUES 
-        ('AC 85 23 E1', 'Brandon', 25.0, 60.0, 400, -80),
+        ('547c2251', 'Brandon', 25.0, 60.0, 400, -80),
         ('cc8523e1', 'Evan', 20.5, 55.0, 300, -50),
         ('73fc5ea0', 'Phuc', 22.0, 65.0, 600, -40);
 '''
@@ -104,16 +109,6 @@ user_name, temp_threshold, humidity_threshold, light_threshold = user_details
 cursor.close()
 connection.close()
 
-
-    
-
-# hex_string = binascii.hexlify(b'\xcc\x85#\xe1').decode('utf-8')
-# print(hex_string)
-
-
-
-
-
 # MQTT callback function
 def on_message(client, userdata, msg):
     global light_intensity, u_id
@@ -122,11 +117,21 @@ def on_message(client, userdata, msg):
             light_intensity = int(msg.payload)
             # print(f"Received message on topic {msg.topic}: {light_intensity}")
         elif msg.topic == mqtt_topic_user:
-            global u_id 
-            u_id = binascii.hexlify(msg.payload).decode('utf-8')
-            EmailSender.send_email_user(user_name)
-            print(f"Received message on topic {msg.topic}: {u_id}")
-            print(type(u_id))
+            global u_id, old_u_id, user_email_sent
+            new_u_id = binascii.hexlify(msg.payload).decode('utf-8')
+            if u_id != new_u_id:
+                # print(f"New Login {user_name}")
+                # EmailSender.send_email_user(user_name)
+                old_u_id = u_id
+                u_id = new_u_id
+                user_email_sent = False
+            print(f"Received message on topic {msg.topic}: {new_u_id}")
+            global light_on, fan_on, light_email_sent, fan_email_sent
+            light_on = False
+            fan_on = False
+            light_email_sent = False
+            fan_email_sent = False
+            print(type(new_u_id))
             # print("Raw payload:", msg.payload)
         else:
             print(f"Received message on unknown topic {msg.topic}")
@@ -235,19 +240,19 @@ app.layout = html.Div(
                                         html.H3(f"User: {user_name}"),
                                         html.Ul(
                                             children=[
-                                                html.Li(f"User: {user_name}"),
                                                 html.Li(f"Temperature Threshold: {temp_threshold} °C"),
                                                 html.Li(f"Humidity Threshold: {humidity_threshold} %"),
                                                 html.Li(f"Light Threshold: {light_threshold} Lumens"),
                                             ]
                                         )
-                                    ]
+                                    ],
+                                    style={"display": "flex", "flex-direction": "column"}
                                 ),
                                 html.Div(
                                     className="block",
                                     children=[
                                         html.H3(f"Fan Status: {fan_on}"),
-                                        html.Img(className="block", src=f"assets/img/{'fan/on' if fan_on else 'fan/off'}.png")
+                                        html.Img(className="block", src=f"assets/img/{'fan/on' if fan_on else 'fan/off'}.png", style={"height": "50px", "width": "50px", "opacity": 1 if fan_on else 0})
                                     ]
                                 ),
                                 html.Div(
@@ -256,14 +261,14 @@ app.layout = html.Div(
                                         html.H3(f"Light Status: {'on' if light_on else 'off'}"),
                                         light_button,
 
-                                        html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "100px", "width": "100px"})
+                                        html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "50px", "width": "50px", "opacity": 1 if light_on else 0})
                                     ]
                                 ),
                                  html.Div(
                                     className="block",
                                     children=[
                                         html.H3(f"Nearby Bluetooth Devices: {get_device_count()}"),
-                                        html.Img(className="block", src=f"assets/img/Bluetooth.png", style={"height": "100px", "width": "100px"})
+                                        html.Img(className="block", src=f"assets/img/Bluetooth.png", style={"height": "50px", "width": "50px"})
 
                                         ]
                                 )
@@ -275,7 +280,7 @@ app.layout = html.Div(
                 # Adds Interval component to trigger the callback every 5 seconds
                 dcc.Interval(
                     id='interval-component',
-                    interval=5 * 500,  # in milliseconds
+                    interval=5 * 1000,  # in milliseconds
                     n_intervals=0
                 )
             ]
@@ -290,7 +295,7 @@ app.layout = html.Div(
     [Input('interval-component', 'n_intervals'), Input('light-button', 'value')]
 )
 def update(n, light_status):
-    global bt_devices, light_on, fan_on, email_sent, light_email_sent, user_email_sent, fan_email_sent, wait_time, temp, humidity, light_intensity, u_id, light_threshold, humidity_threshold, temp_threshold, rssi_threshold
+    global bt_devices, light_on, fan_on, email_sent, light_email_sent, user_email_sent, fan_email_sent, wait_time, temp, humidity, light_intensity, u_id, light_threshold, humidity_threshold, temp_threshold, rssi_threshold, old_u_id
 
     # print('Updating...')
     # print(light_intensity)
@@ -312,17 +317,29 @@ def update(n, light_status):
 
     # Check for email response
     if not light_email_sent and light_intensity >= light_threshold:
-        print(f"Treshold of {light_threshold} reached... Sending email")
-        light_on = EmailSender.send_email_light(light_intensity)
+        # print(f"Treshold of {light_threshold} reached... Sending email")
+        EmailSender.send_email_light(light_intensity)
         GPIO.output(led, GPIO.HIGH)   # turn light on
         light_email_sent = True
         email_sent = True
         
     if not fan_email_sent and n % (wait_time / 5) == 0 and temp >= temp_threshold:
+        print("FAN EMAIL")
         fan_on = EmailSender.send_email_fan(temp)
         fan_email_sent = True
         email_sent = True
 
+    # if not user_email_sent:
+    #         EmailSender.send_email_user(user_name)
+    #         user_email_sent = True
+    print(f"user_email_sent: {user_email_sent}")
+    print(f"u_id: {u_id}")
+    print(f"old_u_id: {old_u_id}")
+    if not user_email_sent and u_id != old_u_id:
+        print(f"New Login {user_name}")
+        EmailSender.send_email_user(user_name)
+        user_email_sent = True
+                
 
     # Enables fan based on fan status
     # print(f"Setting fan status: {fan_on}")
@@ -331,7 +348,7 @@ def update(n, light_status):
     GPIO.output(fan2, GPIO.HIGH if fan_on else GPIO.LOW)
 
     # Control the light based on the threshold
-    if light_intensity <= light_threshold:
+    if light_on or light_intensity <= light_threshold: 
         GPIO.output(led, GPIO.HIGH)   # turn light on
         light_on = True
         light_email_sent = True
@@ -339,7 +356,7 @@ def update(n, light_status):
     else:
         GPIO.output(led, GPIO.LOW)   # turn light off
         light_on = False
-        light_email_sent = False
+        # light_email_sent = False
         
     # if temp
 
@@ -357,19 +374,20 @@ def update(n, light_status):
                             html.H3(f"User: {user_name}"),
                             html.Ul(
                                 children=[
-                                    html.Li(f"User: {user_name}"),
                                     html.Li(f"Temperature Threshold: {temp_threshold} °C"),
                                     html.Li(f"Humidity Threshold: {humidity_threshold} %"),
                                     html.Li(f"Light Threshold: {light_threshold} Lumens"),
                                 ]
                             )
-                        ]
+                        ],
+                        style={"display": "flex", "flex-direction": "column"}
+
                     ),
                 html.Div(
                     className="block",
                     children=[
                         html.H3(f"Fan Status: {'on' if fan_on else 'off'}"),
-                        html.Img(className="block", src=f"assets/img/{'fan/on' if fan_on else 'fan/off'}.png")
+                        html.Img(className="block", src=f"assets/img/{'fan/on' if fan_on else 'fan/off'}.png", style={"height": "50px", "width": "50px", "opacity": 1 if fan_on else 0})
                     ]
                 ),
                 html.Div(
@@ -378,14 +396,14 @@ def update(n, light_status):
                         html.H3(f"Light Status: {'on' if light_on else 'off'}"),
                         light_button,
 
-                        html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "100px", "width": "100px"})
+                        html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "50px", "width": "50px", "opacity": 1 if light_on else 0})
                     ]
                 ),
                 html.Div(
                     className="block",
                     children=[
                         html.H3(f"Nearby Bluetooth Devices: {get_device_count()}"),
-                        html.Img(className="block", src=f"assets/img/Bluetooth.png", style={"height": "100px", "width": "100px"})
+                        html.Img(className="block", src=f"assets/img/Bluetooth.png", style={"height": "50px", "width": "50px"})
 
                         ]
                 )
@@ -416,19 +434,20 @@ def update(n, light_status):
                             html.H3(f"User: {user_name}"),
                             html.Ul(
                                 children=[
-                                    html.Li(f"User: {user_name}"),
                                     html.Li(f"Temperature Threshold: {temp_threshold} °C"),
                                     html.Li(f"Humidity Threshold: {humidity_threshold} %"),
                                     html.Li(f"Light Threshold: {light_threshold} Lumens"),
                                 ]
                             )
-                        ]
+                        ],
+                        style={"display": "flex", "flex-direction": "column"}
+
                     ),
                 html.Div(
                     className="block",
                     children=[
                         html.H3(f"Fan Status: {'on' if fan_on else 'off'}"),
-                        html.Img(className="block", src=f"assets/img/{'fan/on' if fan_on else 'fan/off'}.png")
+                        html.Img(className="block", src=f"assets/img/{'fan/on' if fan_on else 'fan/off'}.png", style={"height": "50px", "width": "50px", "opacity": 1 if fan_on else 0})
                     ]
                 ),
                 html.Div(
@@ -437,14 +456,14 @@ def update(n, light_status):
                         html.H3(f"Light Status: {'on' if light_on else 'off'}"),
                         light_button,
 
-                        html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "100px", "width": "100px"})
+                        html.Img(className="block", src=f"assets/img/{'light/on' if light_on else 'light/off'}.png", style={"height": "50px", "width": "50px", "opacity": 1 if light_on else 0})
                     ]
                 ),
                 html.Div(
                     className="block",
                     children=[
                         html.H3(f"Nearby Bluetooth Devices: {get_device_count()}"),
-                        html.Img(className="block", src=f"assets/img/Bluetooth.png", style={"height": "100px", "width": "100px"})
+                        html.Img(className="block", src=f"assets/img/Bluetooth.png", style={"height": "50px", "width": "50px"})
 
                         ]
                 )

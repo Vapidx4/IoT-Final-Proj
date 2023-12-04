@@ -27,6 +27,8 @@ html body{
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    /* margin-right: 5%; */
+
 }
 
 .col-right{
@@ -34,7 +36,7 @@ html body{
     flex-direction: column;
     justify-content: flex-start;
     margin-left: auto;
-    margin-right: 10%;
+    margin-right: 20%;
 }
 
 header {
@@ -74,13 +76,14 @@ main {
 
 .block {
     margin-top: 1em;
-    margin-left: 1em;
+    margin-left: 2em;
     background: #2F3135;
     border-radius: 5%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.7em;
+    padding: 0;
 }
 
 
@@ -88,3 +91,13 @@ image{
     height: 50%;
     width: 50%;
 }
+
+ul {
+    list-style-type: none;
+    margin: 0; 
+    padding: 1rem;
+  }
+
+  ul li {
+    margin-bottom: 8px;
+  }

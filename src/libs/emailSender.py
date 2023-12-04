@@ -19,7 +19,7 @@ subject_user = f"User Entry #{message_id}"
 
 
 def send_email_light(light_intensity):
-    print("Creating email...")
+    print("Creating light email...")
     current_time = datetime.datetime.now().strftime("%H:%M:%S")
     body = f"""
             The Light is ON at {current_time} time.
@@ -42,7 +42,7 @@ def send_email_light(light_intensity):
         print(f"Error sending email: {e}")
         
 def send_email_user(user):
-    print("Creating email...")
+    print("Creating login email...")
     current_time = datetime.datetime.now().strftime("%H:%M:%S")
     body = f"""
             {user} has entered at {current_time} time.
@@ -143,10 +143,10 @@ def send_email_fan(temp):
 
         # Check if the response is "YES"
         if response_body == "YES":
-            print("Light will be turned on.")
+            print("Fan will be turned on.")
             return True
         else:
-            print("Light will be turned off.")
+            print("Fan will be turned off.")
 
     else:
         print("No response received within 5 minutes. Ending the program.")
